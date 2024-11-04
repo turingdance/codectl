@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io/fs"
 	"os"
@@ -34,6 +35,11 @@ type Route struct {
 
 func (p *Route) Println() {
 	fmt.Printf("moduel=%s,func=%s,path=%s,method=%s,comment=%s\n", p.Module, p.Func, p.Path, p.Method, p.Comment)
+}
+
+type NodeRoute struct {
+	Node     *Route
+	Children []*Route
 }
 
 // router /abc
@@ -76,6 +82,10 @@ func camel(s string) string {
 
 // 解析所有文件,构建信息结构体
 func buildroutes(dirsrc string) (routes []*Route, err error) {
+	if dirsrc == "" {
+		err = errors.New("请指定接口代码路径")
+		return
+	}
 	routes = make([]*Route, 0)
 	err = filepath.WalkDir(dirsrc, func(path string, d fs.DirEntry, err error) error {
 		if d.IsDir() {
@@ -205,24 +215,43 @@ func replace(input string, rule map[string]string) string {
 	return input
 }
 
-type NodeRoute struct {
-	Node     *Route
-	Children []*Route
+type ModuleItem struct {
+	Module  string
+	Comment string
+	Path    string
 }
 
 // 生成代码
 func gencode(dirdst string, routes []*Route) (err error) {
+
 	//NodeRoute
 	noderoute := make([]*NodeRoute, 0)
+	modelset := slicekit.NewSet[ModuleItem]()
+	// 这里是处理model
 	for _, v := range routes {
-		if v.Func == "" {
+		item := ModuleItem{
+			v.Module,
+			v.Comment,
+			"",
+		}
 
-			noderoute = append(noderoute, &NodeRoute{
-				Node:     v,
-				Children: make([]*Route, 0),
-			})
+		item.Path = camel(v.Module)
+
+		if item.Module != "" {
+			modelset.Add(item)
 		}
 	}
+	modelset.Range(func(value ModuleItem) bool {
+		noderoute = append(noderoute, &NodeRoute{
+			Node: &Route{
+				Module:  value.Module,
+				Comment: value.Comment,
+				Path:    value.Path,
+			},
+			Children: make([]*Route, 0),
+		})
+		return true
+	})
 	for _, v := range routes {
 		if v.Func != "" {
 			for _, v1 := range noderoute {
@@ -298,9 +327,9 @@ var routerCmd = &cobra.Command{
 		}
 		//扫描目录下的每一个文件
 		if err := gen(dirsrc, dirdst); err != nil {
-			fmt.Println("gen route ", filepath.Join(dirsrc), "->", filepath.Join(dirdst, routerfile), "❎", err.Error())
+			fmt.Println("gen route ", filepath.Join(dirsrc), "->", filepath.Join(dirdst, routerfile), err.Error())
 		} else {
-			fmt.Println("gen route ", filepath.Join(dirsrc), "->", filepath.Join(dirdst, routerfile), "✅")
+			fmt.Println("gen route ", filepath.Join(dirsrc), "->", filepath.Join(dirdst, routerfile), " ok")
 		}
 	},
 	PreRun: func(cmd *cobra.Command, args []string) {

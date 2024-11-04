@@ -42,15 +42,15 @@ func init() {
 	in := strings.NewReader(DefaultDbTypeToLangMapperRule)
 	err := vp1.ReadConfig(in)
 	if err != nil {
-		fmt.Println("✖", err.Error())
+		fmt.Println("error ", err.Error())
 		return
 	}
 	err = vp1.Unmarshal(&DataTypeTOLangMapperRule)
 	if err != nil {
-		fmt.Println("✖", err.Error())
+		fmt.Println("error ", err.Error())
 		return
 	}
-	fmt.Println("✅Load DataTypeTOLangMapperRule success")
+	fmt.Println("Load DataTypeTOLangMapperRule success")
 }
 
 func ResetMapperRuleFromYaml(filepath string) (r map[string]map[string]string, e error) {
