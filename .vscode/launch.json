@@ -10,7 +10,7 @@
             "request": "launch",
             "mode": "auto",
             "program": "${workspaceFolder}/main.go",
-            "args": ["router","-a","winlion","-d",".","-s","C:\\workspace\\sunxiao\\envdocs\\server\\internal\\rest"]
+            "args": ["router","-a","winlion","-t","router.tpl","-d",".","-s","C:\\workspace\\github.com\\turingdance\\codectl\\test"]
         }
     ]
 }

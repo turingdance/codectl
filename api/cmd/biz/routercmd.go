@@ -24,8 +24,10 @@ var dirsrc string = ""
 var dirdst string = ""
 var author string = ""
 var routerfile string = "router.go"
+var tplfile string = "./router.tpl"
 
 type Route struct {
+	Package string
 	Module  string
 	Func    string
 	Path    string
@@ -37,47 +39,38 @@ func (p *Route) Println() {
 	fmt.Printf("moduel=%s,func=%s,path=%s,method=%s,comment=%s\n", p.Module, p.Func, p.Path, p.Method, p.Comment)
 }
 
-type NodeRoute struct {
-	Node     *Route
+type RouteTree struct {
+	Route
 	Children []*Route
 }
 
-// router /abc
-var rulemodule *regexp.Regexp = regexp.MustCompile(`\s*//\s+router\s+(\S+)`)
+// func (ctrl *Account ) Register (
+var regfunc *regexp.Regexp = regexp.MustCompile(`\s*func\s+\(\s*\w+\s+\*([A-Z]+\w+)\s*\)\s+([A-Z]+\w+)\s*\(.*`)
 
-// post,get /abc/edf/{ghi}
-var rulepath *regexp.Regexp = regexp.MustCompile(`\s*//\s+((?:\,?(?:post|get|put|delete|options))+)\s+((?:/[\w\{\}]+)+)`)
-var rulestruct *regexp.Regexp = regexp.MustCompile(`\s*type\s+(\S+)\s+struct\{.*\}?`)
+// @Summary 注册用户
+var regsummary *regexp.Regexp = regexp.MustCompile(`\s*@Summary\s+(.*)`)
 
-// var regfunc *regexp.Regexp = regexp.MustCompile(`.*func\s*\(\s*\w*\s*\*\s*(\w+)\s*\)\s*([\w]+)\s*\(\s*\S+\s*http\.ResponseWriter\s*\,\s*\S+\s*\*http\.Request\s*\).*`)
-var rulefunc *regexp.Regexp = regexp.MustCompile(`\s*func\s+\(\s*\w+\s+\*([A-Z]+\w+)\s*\)\s+([A-Z]+\w+)\s*\(.*`)
+// @Router /account/register [POST,GET]
+var regrouter *regexp.Regexp = regexp.MustCompile(`\s*@Router\s+(\S+)\s+(\[?.*\]?)`)
+
+// type Account struct{}
+var regstruct *regexp.Regexp = regexp.MustCompile(`\s*type\s+(\S+)\s+struct\s*\{.*`)
+
+// package Account
+var regpackage *regexp.Regexp = regexp.MustCompile(`\s*package\s+(\S+)`)
+
+// // 简单描述
 var regcomment *regexp.Regexp = regexp.MustCompile(`.*\/\/\s*(.*).*`)
 
 // 下划线单词转为小写驼峰单词
 func camel(s string) string {
-
-	data := make([]byte, 0, len(s))
-	j := false
-	k := false
-	num := len(s) - 1
-	for i := 0; i <= num; i++ {
-		d := s[i]
-		if !k && d >= 'A' && d <= 'Z' {
-			k = true
-		}
-		if d >= 'a' && d <= 'z' && (j || !k) {
-			d = d - 32
-			j = false
-			k = true
-		}
-		if k && d == '_' && num > i && s[i+1] >= 'a' && s[i+1] <= 'z' {
-			j = true
-			continue
-		}
-		data = append(data, d)
+	return stringx.CamelLcFirst(s)
+}
+func newroute(pkg string) *Route {
+	return &Route{
+		Package: pkg,
+		Method:  []string{"GET", "POST", "OPTIONS"},
 	}
-	ret := string(data[:])
-	return strings.ToLower(ret[:1]) + ret[1:]
 }
 
 // 解析所有文件,构建信息结构体
@@ -87,75 +80,64 @@ func buildroutes(dirsrc string) (routes []*Route, err error) {
 		return
 	}
 	routes = make([]*Route, 0)
-	err = filepath.WalkDir(dirsrc, func(path string, d fs.DirEntry, err error) error {
+	err = filepath.WalkDir(dirsrc, func(fpath string, d fs.DirEntry, err error) error {
 		if d.IsDir() {
 			return err
 		}
-		bts, err := os.ReadFile(path)
+		bts, err := os.ReadFile(fpath)
 		if err != nil {
 			return err
 		}
 
 		scanner := bufio.NewScanner(bytes.NewReader(bts))
 		var proute *Route = nil
-		var latestcomment string = ""
+		pkg := ""
+		_ = pkg
 		for scanner.Scan() {
 			txt := scanner.Text()
-			if rulemodule.MatchString(txt) {
-				// 模块
-				// router /acc
-				module := rulemodule.FindStringSubmatch(txt)
-				proute = &Route{}
-				proute.Path = module[1]
-
-			} else if rulestruct.MatchString(txt) {
-				// 结构体
-				structs := rulestruct.FindStringSubmatch(txt)
-				if proute == nil {
-					proute = &Route{}
-					proute.Path = "/" + stringx.UnderlineToCamelCase(structs[1])
-				}
+			// 开始
+			if regpackage.MatchString(txt) { //package
+				arr := regpackage.FindStringSubmatch(txt)
+				pkg = arr[1]
+				proute = newroute(pkg)
+			} else if regstruct.MatchString(txt) { // 结构体
+				structs := regstruct.FindStringSubmatch(txt)
 				proute.Module = structs[1]
-				proute.Comment = latestcomment
 				routes = append(routes, proute)
-				proute.Println()
-				proute = nil
-			} else if rulepath.MatchString(txt) {
-				// 方法
-				method := rulepath.FindStringSubmatch(txt)
-				proute = &Route{}
-				proute.Method = strings.Split(method[1], ",")
-				proute.Path = method[2]
-			} else if rulefunc.MatchString(txt) {
-				result := rulefunc.FindStringSubmatch(txt)
-				if proute == nil {
-					proute = &Route{}
-					proute.Method = []string{"post", "get"}
-					proute.Path = stringx.UnderlineToCamelCase("/" + stringx.CamelLcFirst(result[2]))
-					if strings.Contains(proute.Path, "create") {
-						proute.Method = []string{"post", "put"}
-					} else if strings.Contains(proute.Path, "update") {
-						proute.Method = []string{"post", "put"}
-					} else if strings.Contains(proute.Path, "delete") {
-						proute.Method = []string{"post", "delete"}
-					} else if strings.Contains(proute.Path, "search") {
-						proute.Method = []string{"post", "get"}
-					} else if strings.Contains(proute.Path, "get") {
-						proute.Method = []string{"post", "get"}
-					} else {
-						proute.Method = []string{"post", "get"}
-					}
-
+				// 开启新的结构体
+				proute = newroute(pkg)
+			} else if regfunc.MatchString(txt) { // 碰到函数
+				funcs := regfunc.FindStringSubmatch(txt)
+				proute.Module = funcs[1]
+				proute.Func = funcs[2]
+				// 如果是空的
+				if proute.Path == "" {
+					proute.Path = path.Join("//", camel(proute.Module), camel(proute.Func))
 				}
-				proute.Module = result[1]
-				proute.Func = result[2]
-				proute.Comment = latestcomment
 				routes = append(routes, proute)
-				proute.Println()
-				proute = nil
+				// 开启新的结构体
+				proute = newroute(pkg)
+			} else if regsummary.MatchString(txt) { // 处理@Summary 函数
+				arr := regsummary.FindStringSubmatch(txt)
+				proute.Comment = arr[1]
+			} else if regrouter.MatchString(txt) { // 处理@Router /a/b/c [POST,DELETE]
+				arr := regrouter.FindStringSubmatch(txt)
+				proute.Path = arr[1]
+				if strings.Contains(arr[2], "[") {
+					arr[2] = strings.TrimPrefix(arr[2], "[")
+					arr[2] = strings.TrimSuffix(arr[2], "]")
+					arr[2] = strings.Trim(arr[2], " ")
+				}
+				if arr[2] != "" {
+					proute.Method = strings.Split(arr[2], ",")
+				}
+			} else if regcomment.MatchString(txt) { //处理注释
+				arr := regcomment.FindStringSubmatch(txt)
+				if proute.Comment == "" {
+					proute.Comment = arr[1]
+				}
+			} else {
 
-			} else if regcomment.MatchString(txt) {
-				latestcomment = regcomment.FindStringSubmatch(txt)[1]
 			}
 		}
 		return err
@@ -184,22 +166,46 @@ var tplrouter string = `
 package ${package}
 
 import (
+	"net/http"
 	"github.com/turingdance/infra/restkit"
 )
+type Route struct {
+	Package string
+	Module  string
+	Func    string
+	Path    string
+	Method  []string
+	Comment string
+	HandlerFunc http.HandlerFunc
+}
+var (
+{{- range $k,$v := . }}
+	{{$module := $v.Module|camel}}
+	// {{$v.Comment}}
+	{{$module}}Ctrl = &{{if ne $v.Package "${package}" }}{{$v.Package}}.{{end}}{{$v.Module}}{}
+{{end}}
+)
+var Routes []Route= []Route{
+	{{- range $k,$v := . }}
+	{{$module := $v.Module|camel}}
+		{{- range $m,$n := $v.Children }}
+		Route{Package:"{{$n.Package}}" ,Module:"{{$n.Module}}",HandlerFunc:{{$module}}Ctrl.{{$n.Func}},Func:"{{$n.Func}}",Path: "{{$n.Path}}",Method:[]string{	{{- range $x,$y := $n.Method }}"{{$y}}",{{end}} },Comment:"{{$n.Comment}}"},
+		{{end}}
+	{{end}}
+}
 
 var DefaultRouter *restkit.Router = restkit.NewRouter().PathPrefix("/")
 // 初始化路由
 func InitRouter(router *restkit.Router) {
 	{{- range $k,$v := . }}
-	{{$module := $v.Node.Module|camel}}
-	// {{$v.Node.Comment}}
-	{{$module}}Ctrl := &{{$v.Node.Module}}{}
-	{{$module}}router := router.Subrouter().PathPrefix("{{$v.Node.Path}}")
+	{{$module := $v.Module|camel}}
+	// {{$v.Comment}}
+	{{$module}}Ctrl := &{{$v.Module}}{}
+	{{$module}}router := router.Subrouter().PathPrefix("{{$v.Path}}")
 	{{- range $g,$h := $v.Children }}
 	//{{$h.Comment}}
 	{{$module}}router.HandleFunc("{{$h.Path}}", {{$module}}Ctrl.{{$h.Func}}).Methods({{range $h.Method}}"{{.}}",{{end}})
 	{{end}}
-
 	{{end}}
 }
 func init() {
@@ -223,45 +229,39 @@ type ModuleItem struct {
 
 // 生成代码
 func gencode(dirdst string, routes []*Route) (err error) {
-
+	bts, err := os.ReadFile(tplfile)
+	if err != nil {
+		// 如果是文件不存在问题 则直接
+		if os.IsNotExist(err) {
+			os.WriteFile(tplfile, []byte(tplrouter), 0755)
+		} else {
+			return err
+		}
+	} else {
+		tplrouter = string(bts)
+	}
 	//NodeRoute
-	noderoute := make([]*NodeRoute, 0)
-	modelset := slicekit.NewSet[ModuleItem]()
+	routetree := make([]*RouteTree, 0)
 	// 这里是处理model
 	for _, v := range routes {
-		item := ModuleItem{
-			v.Module,
-			v.Comment,
-			"",
-		}
-
-		item.Path = camel(v.Module)
-
-		if item.Module != "" {
-			modelset.Add(item)
+		if v.Func == "" && v.Module != "" {
+			routetree = append(routetree, &RouteTree{
+				Route:    *v,
+				Children: make([]*Route, 0),
+			})
 		}
 	}
-	modelset.Range(func(value ModuleItem) bool {
-		noderoute = append(noderoute, &NodeRoute{
-			Node: &Route{
-				Module:  value.Module,
-				Comment: value.Comment,
-				Path:    value.Path,
-			},
-			Children: make([]*Route, 0),
-		})
-		return true
-	})
+
 	for _, v := range routes {
 		if v.Func != "" {
-			for _, v1 := range noderoute {
-				if v1.Node.Module == v.Module {
-					v1.Children = append(v1.Children, v)
+			for _, node := range routetree {
+				if node.Module == v.Module {
+					node.Children = append(node.Children, v)
 				}
 			}
 		}
 	}
-	for _, v := range noderoute {
+	for _, v := range routetree {
 		slicekit.SortStable(v.Children, func(e1, e2 *Route) bool {
 			score1 := score(e1.Path)
 			score2 := score(e2.Path)
@@ -302,7 +302,7 @@ func gencode(dirdst string, routes []*Route) (err error) {
 	}
 	dstfile.Truncate(0)
 	defer dstfile.Close()
-	err = tpl.Execute(dstfile, noderoute)
+	err = tpl.Execute(dstfile, routetree)
 	return err
 
 }
@@ -345,6 +345,7 @@ func init() {
 	rootCmd.AddCommand(routerCmd)
 	routerCmd.Flags().StringVarP(&dirsrc, "src", "s", "", "dir of source")
 	routerCmd.Flags().StringVarP(&dirdst, "dst", "d", "", "dir for save")
+	routerCmd.Flags().StringVarP(&tplfile, "tpl", "t", "./router.tpl", "tpl for router")
 	routerCmd.Flags().StringVarP(&author, "author", "a", "github.com/turingdance/codectl", "author of code")
 	routerCmd.Flags().StringVarP(&routerfile, "name", "n", "router.go", "name of router file")
 }
