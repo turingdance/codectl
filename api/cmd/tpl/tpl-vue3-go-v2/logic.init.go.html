@@ -1,0 +1,24 @@
+{{define "./server/app/[prjname]/logic/init.go.tpl"}}
+// gen by codectl ,donot modify ,https://github.com/turingdance/codectl.git
+// gen by codectl ,donot modify ,https://github.com/turingdance/codectl.git
+// @author {{.Project.Author}}
+
+package logic
+
+import (
+	"os"
+	"{{.Project.Package}}/app/{{.Project.Name|lower}}/conf"
+	"github.com/turingdance/infra/dbkit"
+)
+
+func InitApp(c *conf.AppConf) {
+	engin, err := dbkit.OpenDb(dbkit.DBTYPE(c.DbType), c.Dsn, dbkit.WithWriter(os.Stdout), dbkit.AutoMigrate(),
+	dbkit.SetLogLevel(c.LogLevel),
+	)
+	if err != nil {
+		panic(err)
+	}
+	DbEngin = engin
+}
+
+{{end}}
