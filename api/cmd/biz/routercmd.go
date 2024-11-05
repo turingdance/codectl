@@ -84,6 +84,10 @@ func buildroutes(dirsrc string) (routes []*Route, err error) {
 		if d.IsDir() {
 			return err
 		}
+		// 过滤掉router.go 文件 和 router.go.bak
+		if strings.Contains(fpath, routerfile) {
+			return nil
+		}
 		bts, err := os.ReadFile(fpath)
 		if err != nil {
 			return err
@@ -133,7 +137,7 @@ func buildroutes(dirsrc string) (routes []*Route, err error) {
 				}
 			} else if regcomment.MatchString(txt) { //处理注释
 				arr := regcomment.FindStringSubmatch(txt)
-				if proute.Comment == "" {
+				if proute != nil && proute.Comment == "" {
 					proute.Comment = arr[1]
 				}
 			} else {
@@ -178,6 +182,7 @@ type Route struct {
 	Comment string
 	HandlerFunc http.HandlerFunc
 }
+
 var (
 {{- range $k,$v := . }}
 	{{$module := $v.Module|camel}}
@@ -185,11 +190,18 @@ var (
 	{{$module}}Ctrl = &{{if ne $v.Package "${package}" }}{{$v.Package}}.{{end}}{{$v.Module}}{}
 {{end}}
 )
+var MapCtrl map[string]any = map[string]any{
+	{{- range $k,$v := . }}
+	{{$module := $v.Module|camel}}
+	// {{$v.Comment}}
+		"{{$v.Module}}":{{$module}}Ctrl,
+	{{end}}
+}
 var Routes []Route= []Route{
 	{{- range $k,$v := . }}
 	{{$module := $v.Module|camel}}
 		{{- range $m,$n := $v.Children }}
-		Route{Package:"{{$n.Package}}" ,Module:"{{$n.Module}}",HandlerFunc:{{$module}}Ctrl.{{$n.Func}},Func:"{{$n.Func}}",Path: "{{$n.Path}}",Method:[]string{	{{- range $x,$y := $n.Method }}"{{$y}}",{{end}} },Comment:"{{$n.Comment}}"},
+		{Package:"{{$n.Package}}" ,Module:"{{$n.Module}}",HandlerFunc:{{$module}}Ctrl.{{$n.Func}},Func:"{{$n.Func}}",Path: "{{$n.Path}}",Method:[]string{	{{- range $x,$y := $n.Method }}"{{$y}}",{{end}} },Comment:"{{$n.Comment}}"},
 		{{end}}
 	{{end}}
 }
