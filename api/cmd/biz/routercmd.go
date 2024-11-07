@@ -364,5 +364,5 @@ func init() {
 	routerCmd.Flags().StringVarP(&tplfile, "tpl", "t", "./router.tpl", "tpl for router")
 	routerCmd.Flags().StringVarP(&author, "author", "a", "github.com/turingdance/codectl", "author of code")
 	routerCmd.Flags().StringVarP(&routerfile, "name", "n", "router.go", "name of router file")
-	routerCmd.Flags().StringArrayVarP(&excludes, "exclude", "e", []string{}, "file will be exclude for scan...")
+	routerCmd.Flags().StringArrayVarP(&excludes, "exclude", "x", []string{}, "file will be exclude for scan...")
 }
