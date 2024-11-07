@@ -20,7 +20,12 @@ type prjctrl struct {
 // 列表
 func (s *prjctrl) list(args []string) error {
 	table := tablewriter.NewWriter(os.Stdout)
-	table.SetHeader([]string{"ID", "服务名", "开发者", "应用描述", "数据库类型", "数据库名称", "数据库连接串", "表结构前缀", "模板", "应用包名", "存储位置", "语言类型", "排序位"})
+	table.SetHeader([]string{"ID", "服务名",
+		"开发者", "应用描述",
+		"数据库类型", "数据库名称",
+		"数据库连接串", "表结构前缀",
+		"模板", "应用包名", "存储位置",
+		"语言类型", "排序位"})
 	prjs, total, err := logic.ListAllProject(&cond.CondWraper{
 		Pager: cond.Pager{
 			Pagesize: 1024,

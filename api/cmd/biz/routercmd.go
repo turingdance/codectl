@@ -26,6 +26,9 @@ var author string = ""
 var routerfile string = "router.go"
 var tplfile string = "./router.tpl"
 
+// 排除在外的
+var excludes []string = []string{}
+
 type Route struct {
 	Package string
 	Module  string
@@ -74,7 +77,7 @@ func newroute(pkg string) *Route {
 }
 
 // 解析所有文件,构建信息结构体
-func buildroutes(dirsrc string) (routes []*Route, err error) {
+func buildroutes(dirsrc string, excludes ...string) (routes []*Route, err error) {
 	if dirsrc == "" {
 		err = errors.New("请指定接口代码路径")
 		return
@@ -84,8 +87,8 @@ func buildroutes(dirsrc string) (routes []*Route, err error) {
 		if d.IsDir() {
 			return err
 		}
-		// 过滤掉router.go 文件 和 router.go.bak
-		if strings.Contains(fpath, routerfile) {
+		// 过滤掉需要隔离的文件
+		if slicekit.Contains(excludes, fpath) {
 			return nil
 		}
 		bts, err := os.ReadFile(fpath)
@@ -319,8 +322,9 @@ func gencode(dirdst string, routes []*Route) (err error) {
 
 }
 
-func gen(dirsrc string, dirdst string) error {
-	routes, err := buildroutes(dirsrc)
+func gen(dirsrc string, dirdst string, excludes ...string) error {
+	excludes = append(excludes, dstfile)
+	routes, err := buildroutes(dirsrc, excludes...)
 
 	if err != nil {
 		return err
@@ -360,4 +364,5 @@ func init() {
 	routerCmd.Flags().StringVarP(&tplfile, "tpl", "t", "./router.tpl", "tpl for router")
 	routerCmd.Flags().StringVarP(&author, "author", "a", "github.com/turingdance/codectl", "author of code")
 	routerCmd.Flags().StringVarP(&routerfile, "name", "n", "router.go", "name of router file")
+	routerCmd.Flags().StringArrayVarP(&excludes, "exclude", "e", []string{}, "file will be exclude for scan...")
 }
