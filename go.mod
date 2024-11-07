@@ -8,7 +8,7 @@ require (
 	github.com/olekukonko/tablewriter v0.0.5
 	github.com/spf13/cobra v1.8.1
 	github.com/spf13/viper v1.20.0-alpha.6
-	github.com/turingdance/infra v0.0.0-00010101000000-000000000000
+	github.com/turingdance/infra v0.0.0-20241107115409-d99d27056c7b
 	gorm.io/gorm v1.25.12
 )
 

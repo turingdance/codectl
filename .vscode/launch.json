@@ -11,6 +11,14 @@
             "mode": "auto",
             "program": "${workspaceFolder}/main.go",
             "args": ["router","-a","winlion","-t","router.tpl","-d",".","-s","C:\\workspace\\sunxiao\\envdocs\\server\\internal\\rest"]
+        },
+        {
+            "name": "router-x",
+            "type": "go",
+            "request": "launch",
+            "mode": "auto",
+            "program": "${workspaceFolder}/main.go",
+            "args": ["router","-a","winlion","-s","C:\\ship\\smartenv\\gateway\\pkg\\rest","-x" ,"respdata.go","-x","resthandle.go","-x","restctrl.go"]
         }
     ]
 }

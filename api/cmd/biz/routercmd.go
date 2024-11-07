@@ -87,8 +87,15 @@ func buildroutes(dirsrc string, excludes ...string) (routes []*Route, err error)
 		if d.IsDir() {
 			return err
 		}
+		//basepath := strings.ReplaceAll(fpath, dirsrc, "")
 		// 过滤掉需要隔离的文件
-		if slicekit.Contains(excludes, fpath) {
+		if slicekit.Some(excludes, func(arr []string, ele string) bool {
+			if strings.Contains(fpath, ele) {
+				return true
+			} else {
+				return false
+			}
+		}) {
 			return nil
 		}
 		bts, err := os.ReadFile(fpath)
@@ -342,7 +349,7 @@ var routerCmd = &cobra.Command{
 			dirdst = dirsrc
 		}
 		//扫描目录下的每一个文件
-		if err := gen(dirsrc, dirdst); err != nil {
+		if err := gen(dirsrc, dirdst, excludes...); err != nil {
 			fmt.Println("gen route ", filepath.Join(dirsrc), "->", filepath.Join(dirdst, routerfile), err.Error())
 		} else {
 			fmt.Println("gen route ", filepath.Join(dirsrc), "->", filepath.Join(dirdst, routerfile), " ok")
