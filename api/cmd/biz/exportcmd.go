@@ -64,7 +64,7 @@ var exportCmd = &cobra.Command{
 		if env == string(conf.PROD) {
 			loglevel = logger.ErrorLevel
 		}
-		exportdb, err := dbkit.OpenDb(dbkit.DBTYPE(prj.DbType), prj.Dsn, dbkit.WithWriter(os.Stdout),
+		exportdb, err := dbkit.OpenDb(prj.Dsn, dbkit.WithWriter(os.Stdout),
 			dbkit.SetLogLevel(loglevel))
 		if err != nil {
 			logger.Error(err.Error())

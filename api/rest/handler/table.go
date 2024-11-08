@@ -41,7 +41,7 @@ func (ctrl *table) Export(ctx restkit.Context) (r *wraper.Response, err error) {
 	// 查询数据库
 	// 解析prj.Dsn 获得databasename
 
-	exportdb, err := dbkit.OpenDb(dbkit.DBTYPE(prj.DbType), prj.Dsn, dbkit.WithWriter(os.Stdout), dbkit.SetLogLevel(logger.ErrorLevel))
+	exportdb, err := dbkit.OpenDb(prj.Dsn, dbkit.WithWriter(os.Stdout), dbkit.SetLogLevel(logger.ErrorLevel))
 
 	if err != nil {
 		logger.Error(err.Error(), "dsn", prj.Dsn)

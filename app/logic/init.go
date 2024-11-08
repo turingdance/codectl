@@ -20,7 +20,7 @@ func InitApp(c *conf.AppConf) {
 		fmt.Println(err.Error())
 		return
 	}
-	engin, err := dbkit.OpenDb(dbkit.DBTYPE(c.DbType), c.Dsn,
+	engin, err := dbkit.OpenDb(c.Dsn,
 		dbkit.WithWriter(os.Stdout, filewriter),
 		dbkit.WithPrefix(c.Prefix),
 		dbkit.IgnoreRecordNotFoundError(true),

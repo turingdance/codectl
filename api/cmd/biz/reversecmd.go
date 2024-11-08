@@ -48,7 +48,7 @@ func reverse(args []string) (err error) {
 		return
 	}
 	// 导出的数据库
-	exportdb, err := dbkit.OpenDb(dbkit.DBTYPE(prj.DbType), prj.Dsn, dbkit.WithWriter(os.Stdout), dbkit.SetLogLevel(loglevel))
+	exportdb, err := dbkit.OpenDb(prj.Dsn, dbkit.WithWriter(os.Stdout), dbkit.SetLogLevel(loglevel))
 	if err != nil {
 		return err
 	}
