@@ -3,6 +3,8 @@ package logic
 import (
 	"time"
 
+	"github.com/spf13/viper"
+	"github.com/turingdance/codectl/app/conf"
 	"github.com/turingdance/codectl/app/model"
 	"github.com/turingdance/infra/cond"
 	"github.com/turingdance/infra/dbkit"
@@ -42,6 +44,15 @@ func TakeCurrentProject() (result *model.Project, err error) {
 			Field:  "sort_index",
 		},
 	})
+}
+
+func TakeDefaultProject() (result *model.Project, err error) {
+	viper.SetConfigFile(conf.ConfigFile)
+	viper.SetConfigType("yaml")
+	viper.ReadInConfig()
+	result = &model.Project{}
+	err = viper.Unmarshal(result)
+	return result, err
 }
 
 func CreateProject(model *model.Project) (*model.Project, error) {

@@ -43,8 +43,45 @@
             "type": "go",
             "request": "launch",
             "mode": "auto",
+            "console": "integratedTerminal",
             "program": "${workspaceFolder}/main.go",
             "args": ["init"]
+        },
+        {
+            "name": "config",
+            "type": "go",
+            "request": "launch",
+            "mode": "auto",
+            "console": "integratedTerminal",
+            "program": "${workspaceFolder}/main.go",
+            "args": ["set"]
+        },
+        {
+            "name": "set author winlion",
+            "type": "go",
+            "request": "launch",
+            "mode": "auto",
+            "console": "integratedTerminal",
+            "program": "${workspaceFolder}/main.go",
+            "args": ["set","dsn=mysql://root:rootme@123@tcp(127.0.0.1:3306)/dbetrain?charset=utf8mb4&parseTime=true&loc=Local"]
+        },
+        {
+            "name": "copy",
+            "type": "go",
+            "request": "launch",
+            "mode": "auto",
+            "console": "integratedTerminal",
+            "program": "${workspaceFolder}/main.go",
+            "args": ["tpl","copy","tpl-vue3-etrain","tpl-vue3-etrain1"]
+        },
+        {
+            "name": "runsql",
+            "type": "go",
+            "request": "launch",
+            "mode": "auto",
+            "console": "integratedTerminal",
+            "program": "${workspaceFolder}/main.go",
+            "args": ["runsql","--dir","C:\\workspace\\zhanglin\\etrain\\server\\sql\\ecls"]
         }
     ]
 }

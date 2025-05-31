@@ -34,7 +34,6 @@ func (s *tplctrl) walkdir(filepath string) ([]string, error) {
 	for _, v := range files {
 		allfile = append(allfile, v.Name())
 	}
-
 	return allfile, nil
 }
 
@@ -77,6 +76,18 @@ func (s *tplctrl) add_local(args []string) (err error) {
 		return err
 	}
 	return s.list(args)
+}
+
+func (s *tplctrl) copy(args []string) (err error) {
+	from := args[0]
+	dst := args[1]
+	dirfromabs := path.Join(conf.DirTpldata, from+"/")
+	dirtoabs := path.Join(conf.DirTpldata, dst)
+	err = filekit.CopyDir(dirfromabs, dirtoabs)
+	if err == nil {
+		fmt.Printf("copy ...✅\n%s \n=>\n %s \n", dirfromabs, dirtoabs)
+	}
+	return err
 }
 
 // 添加网络模版
@@ -159,6 +170,8 @@ var tplmapfun map[string]func([]string) error = map[string]func([]string) error{
 	"add":   defaulttplctrl.add,
 	"use":   defaulttplctrl.use,
 	"del":   defaulttplctrl.del,
+	"cp":    defaulttplctrl.copy,
+	"copy":  defaulttplctrl.copy,
 	"clone": defaulttplctrl.clone,
 }
 
@@ -169,8 +182,6 @@ var tplCmd = &cobra.Command{
 	Long: `
 tpl list
     list all template exist in tpl dir  
-tpl use [tplid]
-    use tplid as the default tpl for current project
 tpl del [tplid]
     delete tpl
 tpl add [tplpath] [dstdir]
@@ -178,10 +189,13 @@ tpl add [tplpath] [dstdir]
 	if tplpath is a file url,copy it and make it as a templete
 tpl clone [giturl] [dstdir]
     clone giturl  and save it at current dir for eg  tpl  clone https://github.com/techidea8/tpl-vue3-go.git
+tpl cp tplname newtplname
+tpl copy tplname newtplname
+    copy tpl named tplname and save as newtplname
 `,
 	Run: func(cmd *cobra.Command, args []string) { //这里是命令的执行方法
 		if len(args) == 0 {
-			cmd.Usage()
+			cmd.Help()
 			return
 		}
 		if len(args) == 1 {
@@ -211,5 +225,4 @@ var (
 
 func init() {
 	rootCmd.AddCommand(tplCmd)
-	tplCmd.Flags().Int32VarP(&prjId, "prj", "p", 0, "id of project ")
 }

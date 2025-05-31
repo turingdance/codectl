@@ -47,7 +47,11 @@ func (ctrl *table) Export(ctx restkit.Context) (r *wraper.Response, err error) {
 		logger.Error(err.Error(), "dsn", prj.Dsn)
 		return
 	}
-	dbconf := dbkit.ParseMysql(prj.Dsn)
+	dbconf, err := dbkit.ParseMysql(prj.Dsn)
+	if err != nil {
+		logger.Error(err.Error(), "dsn", prj.Dsn)
+		return
+	}
 	dbname := dbconf.Dbname
 	tablename := param.Name
 	table := &model.Table{

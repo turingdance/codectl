@@ -4,6 +4,8 @@
 
 package model
 
+import "github.com/turingdance/infra/dbkit"
+
 const TableNameProject = "project"
 
 // Project mapped from table <project>
@@ -24,6 +26,6 @@ type Project struct {
 }
 
 // TableName Project's table name
-// func (*Project) TableName() string {
-// 	return TableNameProject
-// }
+func (s *Project) DbInfo() (c *dbkit.DbConfig,e error) {
+	return dbkit.Parse(s.Dsn)
+}

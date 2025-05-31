@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"html/template"
 	"os"
-	"path"
 	"path/filepath"
 	"strings"
 
@@ -58,6 +57,8 @@ func PrepareExportTable(vo *PrepareVo) (table *model.Table, err error) {
 		return nil, err
 	}
 	dbname := dbconf.Dbname
+	prj.DbName = dbconf.Dbname
+	prj.DbType = string(dbconf.DbType)
 	// 取数据,有没有现成的
 	table, err = Take(table, *cond.NewCondWrapper())
 	// 如果报错了 直接报错
@@ -148,6 +149,8 @@ func PrepareExportTable(vo *PrepareVo) (table *model.Table, err error) {
 	table.Types = types
 	return table, nil
 }
+
+// tpldir 使用的模板路径
 func ExportTable(table *model.Table, tpldir string, onfilegennerate ...CallbackFunc) error {
 	return Render(table, tpldir, onfilegennerate...)
 }
@@ -169,12 +172,16 @@ func Render(table *model.Table, tpldir string, onfilegennerate ...CallbackFunc) 
 		"contains":  strings.Contains,
 		"has":       slicekit.HasSubStr,
 	})
-	tpldir = path.Join(tpldir, table.Project.TplId)
 	tmpls, err = tmpls.ParseGlob(tpldir + "/*.html")
 	if err != nil {
 		return err
 	}
+	// 初始化备份目录
 	batchIndex := timekit.DateTimeNow(timekit.YYYYMMDDhhmmsspure)
+	bakdir := filepath.Join(table.Project.Dirsave, ".bak", batchIndex)
+	if !filekit.IsExist(bakdir) {
+		os.MkdirAll(bakdir, 0755)
+	}
 	for _, tpl := range tmpls.Templates() {
 		tplName := tpl.Name()
 		//过滤掉以html结尾的
@@ -193,8 +200,13 @@ func Render(table *model.Table, tpldir string, onfilegennerate ...CallbackFunc) 
 		dstFile = strings.TrimSuffix(dstFile, ".tpl")
 		os.MkdirAll(filepath.Dir(dstFile), os.ModeDir)
 		// 如果存在直接备份
+
 		if filekit.Exists(dstFile) {
-			bakfile := dstFile + ".bak." + batchIndex
+			bakfile := filepath.Join(bakdir, strings.ReplaceAll(dstFile, table.Project.Dirsave, ""))
+			dir := filepath.Dir(bakfile)
+			if !filekit.IsExist(dir) {
+				os.MkdirAll(dir, 0755)
+			}
 			buf, err := os.ReadFile(dstFile)
 			if err != nil {
 				logger.Error(err.Error())
@@ -205,11 +217,6 @@ func Render(table *model.Table, tpldir string, onfilegennerate ...CallbackFunc) 
 				logger.Error(err.Error())
 				return err
 			}
-			// err = os.Rename(dstFile, dstFile+"_"+batchIndex)
-			// if err != nil {
-			// 	logger.Error(err.Error())
-			// 	return err
-			// }
 		}
 		f, e := os.OpenFile(dstFile, os.O_WRONLY|os.O_CREATE, 0766)
 		if e != nil {

@@ -4,6 +4,8 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"path"
+	"strconv"
 	"strings"
 
 	"github.com/spf13/cobra" // 安装依赖 go get -u github.com/spf13/cobra/cobra
@@ -27,16 +29,12 @@ func NewReverseCtrl() *reversectrl {
 func (s *reversectrl) Init() {
 
 }
-func reverse(args ...string) (err error) {
+func reverse(prj *model.Project, args ...string) (err error) {
 	// 配置文件展示加载的规则
 	if rulefile != "" {
 		conf.ResetMapperRule(rulefile)
 	}
-	//首先获得全部表格
-	prj, err := logic.TakeCurrentProject()
-	if err != nil {
-		return err
-	}
+
 	if dirsave != "" {
 		prj.Dirsave = dirsave
 	}
@@ -44,7 +42,7 @@ func reverse(args ...string) (err error) {
 	if env == string(conf.PROD) {
 		loglevel = logger.ErrorLevel
 	}
-	if prj.ID == 0 {
+	if prj.Dsn == "" {
 		err = fmt.Errorf("缺少项目配置")
 		return
 	}
@@ -53,7 +51,11 @@ func reverse(args ...string) (err error) {
 	if err != nil {
 		return err
 	}
-	tables, err := logic.BuildTableFromSchema(exportdb, prj.DbName)
+	dbinfo, err := prj.DbInfo()
+	if err != nil {
+		return err
+	}
+	tables, err := logic.BuildTableFromSchema(exportdb, dbinfo.Dbname)
 	if err != nil {
 		return err
 	}
@@ -80,7 +82,8 @@ func reverse(args ...string) (err error) {
 		if err != nil {
 			return err
 		}
-		err = logic.ExportTable(table, conf.DirTpldata)
+		tpldir := path.Join(conf.DirTpldata, prj.TplId)
+		err = logic.ExportTable(table, tpldir)
 		if err != nil {
 			return err
 		}
@@ -96,9 +99,30 @@ var reverseCmd = &cobra.Command{
 	Short: "reverse all table of project to code",
 	Long:  `reverse all table of project to code such as golang/java..`,
 	Run: func(cmd *cobra.Command, args []string) { //这里是命令的执行方法
-		if err := reverse(args...); err != nil {
-			logger.Error(err.Error())
+		if len(args) == 0 {
+			if prj, err := logic.TakeDefaultProject(); err != nil {
+				logger.Error(err.Error())
+			} else {
+				if err := reverse(prj, args...); err != nil {
+					logger.Error(err.Error())
+				}
+			}
+		} else {
+			for _, v := range args {
+				if id, err := strconv.ParseInt(v, 10, 32); err != nil {
+					logger.Error(err.Error())
+				} else {
+					if prj, err := logic.TakeByPrimaryKey(&model.Project{ID: int32(id)}); err != nil {
+						logger.Error(err.Error())
+					} else {
+						if err := reverse(prj, args...); err != nil {
+							logger.Error(err.Error())
+						}
+					}
+				}
+			}
 		}
+
 	},
 	PreRun: func(cmd *cobra.Command, args []string) {
 		//这个在命令执行前执行
