@@ -1,6 +1,7 @@
 package biz
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"strings"
@@ -26,7 +27,7 @@ func NewReverseCtrl() *reversectrl {
 func (s *reversectrl) Init() {
 
 }
-func reverse(args []string) (err error) {
+func reverse(args ...string) (err error) {
 	// 配置文件展示加载的规则
 	if rulefile != "" {
 		conf.ResetMapperRule(rulefile)
@@ -56,6 +57,9 @@ func reverse(args []string) (err error) {
 	if err != nil {
 		return err
 	}
+	if len(tables) == 0 {
+		return errors.New("there is found  no table")
+	}
 	for _, tb := range tables {
 		if !strings.Contains(tb.Name, prj.Prefix) {
 			logger.Debugf("ignore  %s because of %s", tb.Name, prj.Prefix)
@@ -80,7 +84,7 @@ func reverse(args []string) (err error) {
 		if err != nil {
 			return err
 		}
-		fmt.Println("✅generate code " + table.Name + "->" + table.Module + "✓")
+		fmt.Println("generate code " + table.Name + "->" + table.Module + "✓")
 	}
 
 	return nil
@@ -92,7 +96,7 @@ var reverseCmd = &cobra.Command{
 	Short: "reverse all table of project to code",
 	Long:  `reverse all table of project to code such as golang/java..`,
 	Run: func(cmd *cobra.Command, args []string) { //这里是命令的执行方法
-		if err := reverse(args); err != nil {
+		if err := reverse(args...); err != nil {
 			logger.Error(err.Error())
 		}
 	},
@@ -107,7 +111,7 @@ var reverseCmd = &cobra.Command{
 }
 
 func init() {
-	reverseCmd.Flags().StringVarP(&rulefile, "rule", "r", "", "rule config file,like mapper.yml")
+	reverseCmd.Flags().StringVarP(&rulefile, "mapper", "m", "", "rule config file,like mapper.yml")
 	reverseCmd.Flags().StringVarP(&dirsave, "dirsave", "d", "", "dir for save")
 	rootCmd.AddCommand(reverseCmd)
 }

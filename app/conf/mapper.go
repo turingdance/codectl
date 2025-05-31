@@ -50,7 +50,6 @@ func init() {
 		fmt.Println("error ", err.Error())
 		return
 	}
-	fmt.Println("Load DataTypeTOLangMapperRule success")
 }
 
 func ResetMapperRuleFromYaml(filepath string) (r map[string]map[string]string, e error) {

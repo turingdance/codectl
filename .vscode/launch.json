@@ -20,5 +20,31 @@
             "program": "${workspaceFolder}/main.go",
             "args": ["router","-a","winlion","-s","C:\\ship\\smartenv\\gateway\\pkg\\rest","-x" ,"respdata.go","-x","resthandle.go","-x","restctrl.go"]
         }
+        ,
+        {
+            "name": "tpl list",
+            "type": "go",
+            "request": "launch",
+            "mode": "auto",
+            "program": "${workspaceFolder}/main.go",
+            "args": ["tpl","list"]
+        }
+        ,
+        {
+            "name": "reverse",
+            "type": "go",
+            "request": "launch",
+            "mode": "auto",
+            "program": "${workspaceFolder}/main.go",
+            "args": ["reverse"]
+        },
+        {
+            "name": "init",
+            "type": "go",
+            "request": "launch",
+            "mode": "auto",
+            "program": "${workspaceFolder}/main.go",
+            "args": ["init"]
+        }
     ]
 }

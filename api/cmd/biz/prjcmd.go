@@ -20,10 +20,14 @@ type prjctrl struct {
 // 列表
 func (s *prjctrl) list(args []string) error {
 	table := tablewriter.NewWriter(os.Stdout)
-	table.SetHeader([]string{"ID", "服务名",
-		"开发者", "应用描述",
-		"数据库类型", "数据库名称",
-		"数据库连接串", "表结构前缀",
+	table.SetHeader([]string{"ID",
+		"服务名",
+		"开发者",
+		"应用描述",
+		"数据库类型",
+		"数据库名称",
+		"数据库连接串",
+		"表结构前缀",
 		"模板", "应用包名", "存储位置",
 		"语言类型", "排序位"})
 	prjs, total, err := logic.ListAllProject(&cond.CondWraper{
@@ -40,6 +44,10 @@ func (s *prjctrl) list(args []string) error {
 	}
 
 	for _, prj := range prjs {
+		dsn := ""
+		if showdsn {
+			dsn = prj.Dsn
+		}
 		table.Append([]string{
 			strconv.Itoa(int(prj.ID)),
 			prj.Name,
@@ -47,7 +55,7 @@ func (s *prjctrl) list(args []string) error {
 			prj.Title,
 			prj.DbType,
 			prj.DbName,
-			prj.Dsn,
+			dsn,
 			prj.Prefix,
 			prj.TplId,
 			prj.Package,
@@ -55,7 +63,7 @@ func (s *prjctrl) list(args []string) error {
 			prj.Lang,
 			fmt.Sprintf("%d", prj.SortIndex)})
 	}
-	fmt.Printf("num  = %d\n", total)
+	fmt.Printf("project num  = %d\n", total)
 	table.Render()
 	return nil
 }
@@ -220,7 +228,9 @@ project use [projectId]
 	},
 	// 还有其他钩子函数
 }
+var showdsn bool = false
 
 func init() {
+	projectCmd.Flags().BoolVar(&showdsn, "showdsn", false, "show dns or not ")
 	rootCmd.AddCommand(projectCmd)
 }

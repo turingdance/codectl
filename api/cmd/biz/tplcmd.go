@@ -43,6 +43,9 @@ func (s *tplctrl) list(args []string) error {
 	table := tablewriter.NewWriter(os.Stdout)
 	table.SetHeader([]string{"序号", "模板ID"})
 	dirs, err := s.walkdir(s.tpldir)
+	if err != nil {
+		return err
+	}
 	total := len(dirs)
 	for index, tplId := range dirs {
 		table.Append([]string{

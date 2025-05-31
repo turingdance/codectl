@@ -53,7 +53,10 @@ func PrepareExportTable(vo *PrepareVo) (table *model.Table, err error) {
 		ProjectID: prj.ID,
 		Name:      vo.TableName,
 	}
-	dbconf := dbkit.ParseMysql(prj.Dsn)
+	dbconf, err := dbkit.ParseMysql(prj.Dsn)
+	if err != nil {
+		return nil, err
+	}
 	dbname := dbconf.Dbname
 	// 取数据,有没有现成的
 	table, err = Take(table, *cond.NewCondWrapper())
