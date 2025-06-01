@@ -7,15 +7,14 @@ import (
 	"net/url"
 	"os"
 	"path"
+	"path/filepath"
 	"strconv"
 	"strings"
-	"time"
 
 	"github.com/olekukonko/tablewriter"
 	"github.com/spf13/cobra" // 安装依赖 go get -u github.com/spf13/cobra/cobra
+	"github.com/spf13/viper"
 	"github.com/turingdance/codectl/app/conf"
-	"github.com/turingdance/codectl/app/logic"
-	"github.com/turingdance/codectl/app/model"
 	"github.com/turingdance/infra/filekit"
 	"github.com/turingdance/infra/logger"
 	"github.com/turingdance/infra/oskit"
@@ -58,7 +57,7 @@ func (s *tplctrl) list(args []string) error {
 }
 
 // 添加
-func (s *tplctrl) add(args []string) (err error) {
+func (s *tplctrl) setup(args []string) (err error) {
 	src := args[0]
 	if strings.HasPrefix(src, "http://") || strings.HasPrefix(src, "https://") {
 		return s.add_net(args)
@@ -69,9 +68,12 @@ func (s *tplctrl) add(args []string) (err error) {
 
 func (s *tplctrl) add_local(args []string) (err error) {
 	src := args[0]
-
-	total, err := filekit.Copy(src, s.tpldir)
-	fmt.Printf("copy %s to %s , num = %d", src, s.tpldir, total)
+	basedir := filepath.Base(src)
+	dstdir := filepath.Join(s.tpldir, basedir)
+	if len(args) > 1 {
+		dstdir = filepath.Join(s.tpldir, args[1])
+	}
+	err = filekit.CopyDir(src, dstdir)
 	if err != nil {
 		return err
 	}
@@ -112,26 +114,23 @@ func (s *tplctrl) add_net(args []string) (err error) {
 
 // 添加
 func (s *tplctrl) use(args []string) (err error) {
-	prj := &model.Project{}
 	tplId := args[0]
-	if prjId == 0 {
-		prj, err = logic.TakeCurrentProject()
-	} else {
-		prj.ID = prjId
-	}
-	//
-	prj.TplId = tplId
-	logic.Update(prj, "ID = ?", prj.ID)
-	(&prjctrl{}).list(args)
+	viper.SetConfigType("yaml")
+	viper.SetConfigFile(conf.ConfigFile)
+	viper.Set("tplid", tplId)
+	viper.WriteConfig()
+
 	return err
 }
 
 // 添加
 func (s *tplctrl) del(args []string) error {
-	prj := &model.Project{}
-
-	prj.SortIndex = int32(time.Now().Unix())
-	logic.Create(prj)
+	for _, dir := range args {
+		rpath := filepath.Join(s.tpldir, dir)
+		if filekit.IsExist(rpath) {
+			os.RemoveAll(rpath)
+		}
+	}
 	s.list(args)
 	return nil
 }
@@ -167,7 +166,7 @@ func NewtplCtl() *tplctrl {
 var defaulttplctrl *tplctrl = NewtplCtl()
 var tplmapfun map[string]func([]string) error = map[string]func([]string) error{
 	"list":  defaulttplctrl.list,
-	"add":   defaulttplctrl.add,
+	"setup": defaulttplctrl.setup,
 	"use":   defaulttplctrl.use,
 	"del":   defaulttplctrl.del,
 	"cp":    defaulttplctrl.copy,
@@ -184,9 +183,9 @@ tpl list
     list all template exist in tpl dir  
 tpl del [tplid]
     delete tpl
-tpl add [tplpath] [dstdir]
+tpl setup tplpath [dstdir]
     if tplpath is a net url,download it and make it as a templete
-	if tplpath is a file url,copy it and make it as a templete
+	if tplpath is a local dir path like dir/of/tpl,copy it and make it as a templete
 tpl clone [giturl] [dstdir]
     clone giturl  and save it at current dir for eg  tpl  clone https://github.com/techidea8/tpl-vue3-go.git
 tpl cp tplname newtplname

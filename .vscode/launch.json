@@ -82,6 +82,24 @@
             "console": "integratedTerminal",
             "program": "${workspaceFolder}/main.go",
             "args": ["runsql","--dir","C:\\workspace\\zhanglin\\etrain\\server\\sql\\ecls"]
+        },
+        {
+            "name": "settpl",
+            "type": "go",
+            "request": "launch",
+            "mode": "auto",
+            "console": "integratedTerminal",
+            "program": "${workspaceFolder}/main.go",
+            "args": ["tpl","add","C:\\workspace\\zhanglin\\etrain\\server\\tpl","tpltest"]
+        },
+        {
+            "name": "deltpl",
+            "type": "go",
+            "request": "launch",
+            "mode": "auto",
+            "console": "integratedTerminal",
+            "program": "${workspaceFolder}/main.go",
+            "args": ["tpl","del","tpl","tpltest"]
         }
     ]
 }

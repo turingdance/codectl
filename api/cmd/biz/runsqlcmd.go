@@ -175,9 +175,9 @@ func _runfile(db *gorm.DB, sqlfile string, transaction bool) (err error) {
 }
 func runfile(db *gorm.DB, sqlfile string, transaction bool) {
 	if err := _runfile(db, sqlfile, transaction); err != nil {
-		logger.Errorf("run %s error=%v ×", sqlfile, err)
+		logger.Errorf("run %s error=%v ❌", sqlfile, err)
 	} else {
-		logger.Infof("run %s, success √", sqlfile)
+		logger.Infof("run %s, success ✅", sqlfile)
 	}
 }
 
