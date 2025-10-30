@@ -65,7 +65,6 @@ func (s *configctrl) listset() error {
 	if err != nil {
 		return err
 	}
-	fmt.Printf("%+v", prj)
 	fmt.Println("appname=", prj.Name)
 	fmt.Println("auth   =", prj.Author)
 	fmt.Println("tile   =", prj.Title)
@@ -145,7 +144,6 @@ func (s *configctrl) setonebyone() error {
 	}
 
 	fmt.Println("prefix:prefix of table,such as sys_, or kf_>")
-
 	fmt.Print(">")
 	fmt.Scanln(&input)
 	if input != "" {
@@ -153,7 +151,7 @@ func (s *configctrl) setonebyone() error {
 		input = ""
 	}
 
-	fmt.Println("package:,eg turingdance.com/turing/app>")
+	fmt.Println("package:,eg turingdance.com/turing")
 	fmt.Print(">")
 	fmt.Scanln(&input)
 	if input != "" {
@@ -161,7 +159,7 @@ func (s *configctrl) setonebyone() error {
 		input = ""
 	} else {
 		if prj.Package == "" {
-			prj.Package = "turingdance.com/turing/app"
+			prj.Package = "turingdance.com/turing"
 		}
 	}
 	logic.UpdateDefaultProject(prj)
@@ -196,6 +194,6 @@ var setctrlCmd = &cobra.Command{
 var lsset = false
 
 func init() {
-	setctrlCmd.Flags().BoolVarP(&lsset, "ls", "l", false, "是否展示lsset")
+	setctrlCmd.Flags().BoolVarP(&lsset, "ls", "l", false, "展示当前项目配置")
 	rootCmd.AddCommand(setctrlCmd)
 }

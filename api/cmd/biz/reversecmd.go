@@ -10,6 +10,7 @@ import (
 	"github.com/turingdance/codectl/app/conf"
 	"github.com/turingdance/codectl/app/logic"
 	"github.com/turingdance/codectl/app/model"
+	"github.com/turingdance/codectl/infra"
 	"github.com/turingdance/infra/dbkit"
 	"github.com/turingdance/infra/logger"
 	"github.com/turingdance/infra/stringx"
@@ -85,10 +86,11 @@ func reverse(prj *model.Project, _ ...string) (err error) {
 	if len(tables) == 0 {
 		return errors.New("there is found  no table")
 	}
-	logger.Info("generate code table num = %d", len(tables))
+	fmt.Printf("generate code for project [%s] => %s\n", prj.Name, prj.Dirsave)
+	var sum int = 0
 	for _, tb := range tables {
 		if !strings.Contains(tb.Name, prj.Prefix) {
-			logger.Infof("ignore  %s because of has no prefix %s", tb.Name, prj.Prefix)
+			fmt.Printf("generate code [!] %s ignore\n", infra.RightPad(tb.Name, " ", 24))
 			continue
 		}
 		// module name
@@ -111,9 +113,10 @@ func reverse(prj *model.Project, _ ...string) (err error) {
 		if err != nil {
 			return err
 		}
-		fmt.Println("generate code " + table.Name + "->" + table.Module + "✓")
+		fmt.Printf("generate code [✓] %s -> %s\n", infra.RightPad(table.Name, " ", 24), table.Module)
+		sum += 1
 	}
-
+	fmt.Printf("generate code table %d/%d\n", sum, len(tables))
 	return nil
 }
 
