@@ -43,9 +43,9 @@ var initctrlCmd = &cobra.Command{
 			fmt.Println(err.Error())
 			return
 		}
-		absDir, _ := filepath.Abs(destDirforapp)
+		absSaveDir, _ := filepath.Abs(destDirforapp)
 		prj.Name = destAppName
-		prj.Dirsave = filepath.Join(absDir, destAppName)
+		prj.Dirsave = absSaveDir
 		if filekit.Exists(prj.Dirsave) {
 			if force {
 				os.RemoveAll(prj.Dirsave)
@@ -55,17 +55,17 @@ var initctrlCmd = &cobra.Command{
 			}
 
 		}
-		prj.TplId = filepath.Join(absDir, destAppName, "server", "tpl")
+		prj.TplId = filepath.Join(absSaveDir, "server", "tpl")
 		prj.Lang = tpl.Lang
 		logic.UpdateDefaultProject(prj)
 
 		infra.Clone(tpl.Url, prj.Dirsave)
 		// 移除
-		os.RemoveAll(filepath.Join(absDir, destAppName, ".git"))
+		os.RemoveAll(filepath.Join(absSaveDir, ".git"))
 		// 替换到新的包
 		if destPkgName != "" {
 			// 如果是golang
-			serverDir := filepath.Join(absDir, destAppName, "server")
+			serverDir := filepath.Join(absSaveDir, "server")
 			err := filepath.Walk(serverDir, func(path string, info os.FileInfo, err error) error {
 				if err != nil {
 					return err

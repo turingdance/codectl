@@ -150,16 +150,20 @@ func (s *configctrl) setonebyone() error {
 		prj.Prefix = input
 		input = ""
 	}
-
-	fmt.Println("package:,eg turingdance.com/turing")
-	fmt.Print(">")
-	fmt.Scanln(&input)
-	if input != "" {
-		prj.Package = input
-		input = ""
-	} else {
-		if prj.Package == "" {
-			prj.Package = "turingdance.com/turing"
+	if prj.Package == "" {
+		prj.Package = "turingdance.com/turing"
+	}
+	for {
+		fmt.Println("package:,eg turingdance.com/turing")
+		fmt.Println("default: ", prj.Package)
+		fmt.Print(">")
+		fmt.Scanln(&input)
+		if input != "" {
+			prj.Package = input
+			input = ""
+		}
+		if prj.Package != "" {
+			break
 		}
 	}
 	logic.UpdateDefaultProject(prj)

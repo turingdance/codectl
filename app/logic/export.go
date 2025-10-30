@@ -2,6 +2,7 @@ package logic
 
 import (
 	"fmt"
+	"html"
 	"html/template"
 	"os"
 	"path/filepath"
@@ -171,6 +172,13 @@ func Render(table *model.Table, tpldir string, onfilegennerate ...CallbackFunc) 
 		"camel":     stringx.UnderlineToCamelCase,
 		"contains":  strings.Contains,
 		"has":       slicekit.HasSubStr,
+		"unescape": func(s string) template.HTML {
+			// 先解码 HTML 实体（&amp;→&）
+			decoded := html.UnescapeString(s)
+			// 返回 template.HTML 类型，告诉模板该内容已安全，无需再次转义
+			return template.HTML(decoded)
+		},
+		"replaceall": strings.ReplaceAll,
 	})
 	tmpls, err = tmpls.ParseGlob(tpldir + "/*.html")
 	if err != nil {
