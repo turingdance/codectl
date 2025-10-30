@@ -47,7 +47,7 @@ var tplsArr []TplInfo = []TplInfo{{
 	Name:    "golang+vue3",
 	Memo:    "golang+vue3+ts+tailwindcss+pina",
 	File:    "golang+vue3.zip",
-	Url:     "https://github.com/turingdance/golang+vue3.git",
+	Url:     "https://github.com/turingdance/golang-vue3.git",
 	Lang:    "golang",
 	Package: "turingdance.com/turing",
 },
