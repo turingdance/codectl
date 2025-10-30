@@ -28,5 +28,5 @@ var versionCmd = &cobra.Command{
 
 func init() {
 	//给我们定义的命令绑定参数 可以给我们定义的任何命令绑定参数
-	rootCmd.AddCommand(versionCmd)
+	// rootCmd.AddCommand(versionCmd)
 }

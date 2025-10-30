@@ -16,6 +16,7 @@ import (
 	"time"
 
 	"github.com/spf13/cobra"
+	"github.com/turingdance/codectl/app/logic"
 	"github.com/turingdance/infra/slicekit"
 	"github.com/turingdance/infra/stringx"
 )
@@ -345,8 +346,16 @@ var routerCmd = &cobra.Command{
 	Short: "generate route by annotation",
 	Long:  `generate route by annotation`,
 	Run: func(cmd *cobra.Command, args []string) { //这里是命令的执行方法
+		prj, _ := logic.TakeDefaultProject()
+		if prj == nil {
+			fmt.Println("当前参数尚未配置")
+			return
+		}
 		if dirsrc != "" && dirdst == "" {
 			dirdst = dirsrc
+		}
+		if author == "" {
+			author = prj.Author
 		}
 		//扫描目录下的每一个文件
 		if err := gen(dirsrc, dirdst, excludes...); err != nil {
@@ -369,7 +378,7 @@ func init() {
 	routerCmd.Flags().StringVarP(&dirsrc, "src", "s", "", "dir of source")
 	routerCmd.Flags().StringVarP(&dirdst, "dst", "d", "", "dir for save")
 	routerCmd.Flags().StringVarP(&tplfile, "tpl", "t", "./router.tpl", "tpl for router")
-	routerCmd.Flags().StringVarP(&author, "author", "a", "github.com/turingdance/codectl", "author of code")
-	routerCmd.Flags().StringVarP(&routerfile, "name", "n", "router.go", "name of router file")
+	routerCmd.Flags().StringVarP(&author, "author", "a", "", "author of code")
+	routerCmd.Flags().StringVarP(&routerfile, "name", "n", "router.gen.go", "name of router file")
 	routerCmd.Flags().StringArrayVarP(&excludes, "exclude", "x", []string{}, "file will be exclude for scan...")
 }

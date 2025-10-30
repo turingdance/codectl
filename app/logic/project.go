@@ -1,6 +1,7 @@
 package logic
 
 import (
+	"bytes"
 	"time"
 
 	"github.com/spf13/viper"
@@ -8,6 +9,8 @@ import (
 	"github.com/turingdance/codectl/app/model"
 	"github.com/turingdance/infra/cond"
 	"github.com/turingdance/infra/dbkit"
+	"github.com/turingdance/infra/logger"
+	"gopkg.in/yaml.v3"
 )
 
 // 列表全部项目
@@ -55,6 +58,23 @@ func TakeDefaultProject() (result *model.Project, err error) {
 	return result, err
 }
 
+func UpdateDefaultProject(result *model.Project) (err error) {
+	yamlData, err := yaml.Marshal(result)
+	if err != nil {
+		return
+	}
+	viper.SetConfigFile(conf.ConfigFile)
+	viper.SetConfigType("yaml")
+	logger.Info("update default file ", conf.ConfigFile)
+	if err = viper.ReadConfig(bytes.NewBuffer(yamlData)); err != nil {
+		return
+	}
+
+	err = viper.WriteConfig()
+	return err
+}
+
 func CreateProject(model *model.Project) (*model.Project, error) {
+	model.SortIndex = int32(time.Now().Unix())
 	return dbkit.Create(DbEngin, model)
 }

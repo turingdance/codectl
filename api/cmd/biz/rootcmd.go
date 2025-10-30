@@ -17,6 +17,9 @@ var rootCmd = &cobra.Command{
 	Short: "代码生成工具",
 	Long:  `通过数据库生成代码`,
 	Run: func(cmd *cobra.Command, args []string) {
+		if showversion {
+			fmt.Println("version is " + VERSION)
+		}
 		// Do Stuff Here
 	},
 }
@@ -54,6 +57,6 @@ func Execute() {
 }
 
 func init() {
-	rootCmd.PersistentFlags().StringVarP(&env, "env", "e", string(conf.PROD), "ENV OF APP: prod/dev")
-	rootCmd.PersistentFlags().StringVarP(&configfile, "conf", "c", "", "config file path:eg app.yaml")
+	rootCmd.PersistentFlags().BoolVarP(&showversion, "version", "v", false, "show version of app")
+	rootCmd.PersistentFlags().StringVarP(&configfile, "conf", "c", "", "config file path:eg app-prod.yaml")
 }

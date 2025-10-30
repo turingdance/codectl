@@ -147,6 +147,11 @@ func (s *prjctrl) update(args []string) error {
 	prj.SortIndex = int32(time.Now().Unix())
 	logic.Update(prj, "id = ?", prj.ID)
 	s.list(args)
+	d, _ := logic.TakeDefaultProject()
+	if d.ID == prj.ID {
+		c, _ := logic.TakeByPrimaryKey(prj)
+		logic.UpdateDefaultProject(c)
+	}
 	return nil
 }
 
@@ -166,8 +171,13 @@ func (s *prjctrl) active(args []string) (err error) {
 		SortIndex: int32(time.Now().Unix()),
 	}
 	_, err = logic.Update(prj, "id = ?", prjId)
+
 	s.list(args)
-	return err
+	if err != nil {
+		return
+	}
+	prj, _ = logic.TakeByPrimaryKey(&model.Project{ID: prj.ID})
+	return logic.UpdateDefaultProject(prj)
 }
 
 // prjId
@@ -231,6 +241,6 @@ project use [projectId]
 var showdsn bool = false
 
 func init() {
-	projectCmd.Flags().BoolVar(&showdsn, "showdsn", false, "show dns or not ")
-	rootCmd.AddCommand(projectCmd)
+	// projectCmd.Flags().BoolVar(&showdsn, "showdsn", false, "show dns or not ")
+	//rootCmd.AddCommand(projectCmd)
 }

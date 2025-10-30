@@ -37,6 +37,7 @@ var DirUserConfig, _ = os.UserConfigDir()
 var (
 	DirAppConfig = path.Join(DirUserConfig, _dirappconfig)
 	DirTpldata   = path.Join(DirUserConfig, _dirappconfig, "tpldir")
+	TplDbFile    = path.Join(DirUserConfig, _dirappconfig, "tpldb.yaml")
 	ConfigFile   = path.Join(DirUserConfig, _dirappconfig, "config.yaml")
 )
 var DefaultAppConf *AppConf = &AppConf{

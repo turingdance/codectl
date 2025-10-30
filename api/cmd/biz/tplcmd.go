@@ -1,6 +1,7 @@
 package biz
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
@@ -15,55 +16,181 @@ import (
 	"github.com/spf13/cobra" // 安装依赖 go get -u github.com/spf13/cobra/cobra
 	"github.com/spf13/viper"
 	"github.com/turingdance/codectl/app/conf"
+	"github.com/turingdance/codectl/infra"
 	"github.com/turingdance/infra/filekit"
 	"github.com/turingdance/infra/logger"
 	"github.com/turingdance/infra/oskit"
+	"github.com/turingdance/infra/slicekit"
+	"gopkg.in/yaml.v3"
 )
 
 type tplctrl struct {
 	tpldir string
 }
 
-func (s *tplctrl) walkdir(filepath string) ([]string, error) {
-	files, err := os.ReadDir(filepath) // files为当前目录下的所有文件名称【包括文件夹】
-	if err != nil {
-		return []string{}, err
+type TplInfo struct {
+	Name    string `yaml:"name"`
+	Memo    string `yaml:"memo"`
+	File    string `yaml:"file"`
+	Url     string `yaml:"url"`
+	Lang    string `yaml:"lang"`
+	Package string `yaml:"package"` // 原始包名称
+}
+
+/*
+  - name: golang+vue3
+    memo: golang+vue3+ts+tailwindcss+pina
+    file: golang+vue3.zip
+    url: https://github.com/turingdance/golang+vue3.git
+*/
+var tplsArr []TplInfo = []TplInfo{{
+	Name:    "golang+vue3",
+	Memo:    "golang+vue3+ts+tailwindcss+pina",
+	File:    "golang+vue3.zip",
+	Url:     "https://github.com/turingdance/golang+vue3.git",
+	Lang:    "golang",
+	Package: "turingdance.com/turing",
+},
+}
+
+type TemplateDataStruct struct {
+	Templates []TplInfo `yaml:"templates"`
+}
+
+func synctpl(tpls ...TplInfo) (result []TplInfo, err error) {
+	// 文件存在
+	viper.SetConfigFile(conf.TplDbFile)
+	viper.SetConfigType("yaml")
+	// 存在
+	tmpdata := &TemplateDataStruct{
+		Templates: make([]TplInfo, 0),
 	}
-	var allfile []string
-	for _, v := range files {
-		allfile = append(allfile, v.Name())
+	// 如果不存在,那么直接加载默认数据
+	if !filekit.Exists(conf.TplDbFile) {
+		tmpdata.Templates = append(tmpdata.Templates, tplsArr...)
+	} else { // 如果存在,从配置文件加载
+		viper.ReadInConfig()
+		existdata := &TemplateDataStruct{
+			Templates: make([]TplInfo, 0),
+		}
+		err = viper.Unmarshal(existdata)
+		if err != nil {
+			return
+		}
+		// 加载老数据
+		tmpdata.Templates = append(tmpdata.Templates, existdata.Templates...)
 	}
-	return allfile, nil
+
+	// 合并新的数据
+	tmpdata.Templates = append(tmpdata.Templates, tpls...)
+	// 去重
+	tmpdata.Templates = infra.Unique(tmpdata.Templates)
+	// 保存到配置文件中
+	yamlData, _err := yaml.Marshal(tmpdata)
+	if _err != nil {
+		return tpls, _err
+	}
+	if err = viper.ReadConfig(bytes.NewBuffer(yamlData)); err != nil {
+		return
+	}
+	err = viper.WriteConfig()
+	return tmpdata.Templates, err
+}
+
+func resettpl(tpls ...TplInfo) (result []TplInfo, err error) {
+	// 文件存在
+	viper.SetConfigFile(conf.TplDbFile)
+	viper.SetConfigType("yaml")
+	// 存在
+	tmpdata := &TemplateDataStruct{
+		Templates: make([]TplInfo, 0),
+	}
+	tmpdata.Templates = append(tmpdata.Templates, tplsArr...)
+	tmpdata.Templates = append(tmpdata.Templates, tpls...)
+	// 去重
+	tmpdata.Templates = infra.Unique(tmpdata.Templates)
+	// 保存到配置文件中
+	yamlData, _err := yaml.Marshal(tmpdata)
+	if _err != nil {
+		return tpls, _err
+	}
+	if err = viper.ReadConfig(bytes.NewBuffer(yamlData)); err != nil {
+		return
+	}
+	err = viper.WriteConfig()
+	return tmpdata.Templates, err
+}
+
+func listtpl(tpls ...TplInfo) {
+	table := tablewriter.NewWriter(os.Stdout)
+	table.SetHeader([]string{"序号", "名称", "包名称", "适用语言", "描述", "地址"})
+	for index, tpl := range tpls {
+		table.Append([]string{
+			strconv.Itoa(index + 1),
+			tpl.Name,
+			tpl.Package,
+			tpl.Lang,
+			tpl.Memo,
+			tpl.Url,
+		})
+	}
+	table.Render()
 }
 
 // 列表
 func (s *tplctrl) list(args []string) error {
-	table := tablewriter.NewWriter(os.Stdout)
-	table.SetHeader([]string{"序号", "模板ID"})
-	dirs, err := s.walkdir(s.tpldir)
-	if err != nil {
-		return err
-	}
-	total := len(dirs)
-	for index, tplId := range dirs {
-		table.Append([]string{
-			strconv.Itoa(index + 1),
-			tplId,
-		})
-	}
-	fmt.Printf("tpldir = %s\ntotal = %d\n", s.tpldir, total)
-	table.Render()
+	tpls, err := synctpl()
+	listtpl(tpls...)
 	return err
 }
 
 // 添加
-func (s *tplctrl) setup(args []string) (err error) {
+func (s *tplctrl) setupv1(args []string) (err error) {
 	src := args[0]
 	if strings.HasPrefix(src, "http://") || strings.HasPrefix(src, "https://") {
 		return s.add_net(args)
 	} else {
 		return s.add_local(args)
 	}
+}
+
+// 添加
+func (s *tplctrl) add(args []string) (err error) {
+	var tpl TplInfo
+	for tpl.Name == "" {
+		fmt.Println("请输入模板信息")
+		fmt.Print("name>")
+		fmt.Scanln(&tpl.Name)
+	}
+	for tpl.Memo == "" {
+		fmt.Println("请输入模板描述,技术栈等")
+		fmt.Print("memo>")
+		fmt.Scanln(&tpl.Memo)
+	}
+	for tpl.Lang == "" {
+		fmt.Println("请输入对应后端语言,golang/java/python等")
+		fmt.Print("lang>")
+		fmt.Scanln(&tpl.Lang)
+	}
+	for tpl.Package == "" {
+		fmt.Println("请后端包名称,如 github.com/turingdance/codectl")
+		fmt.Print("package>")
+		fmt.Scanln(&tpl.Package)
+	}
+
+	for tpl.Url == "" {
+		fmt.Println("请输入模板下载地址")
+		fmt.Print("url>")
+		fmt.Scanln(&tpl.Url)
+	}
+	// 添加到数据配置文件
+	tpls, err := synctpl(tpl)
+	if err != nil {
+		return
+	}
+	listtpl(tpls...)
+	return nil
+
 }
 
 func (s *tplctrl) add_local(args []string) (err error) {
@@ -123,15 +250,25 @@ func (s *tplctrl) use(args []string) (err error) {
 	return err
 }
 
-// 添加
+// 添加 tpl del 1 2 3
 func (s *tplctrl) del(args []string) error {
-	for _, dir := range args {
-		rpath := filepath.Join(s.tpldir, dir)
-		if filekit.IsExist(rpath) {
-			os.RemoveAll(rpath)
+	tpls, _ := synctpl()
+	ids := []int{}
+	for _, id := range args {
+		_id, _ := strconv.Atoi(id)
+		ids = append(ids, _id-1)
+	}
+	tplnew := []TplInfo{}
+	for i, v := range tpls {
+		if !slicekit.Contains(ids, i) {
+			tplnew = append(tplnew, v)
 		}
 	}
-	s.list(args)
+	list, err := resettpl(tplnew...)
+	if err != nil {
+		return err
+	}
+	listtpl(list...)
 	return nil
 }
 
@@ -165,13 +302,13 @@ func NewtplCtl() *tplctrl {
 
 var defaulttplctrl *tplctrl = NewtplCtl()
 var tplmapfun map[string]func([]string) error = map[string]func([]string) error{
-	"list":  defaulttplctrl.list,
-	"setup": defaulttplctrl.setup,
-	"use":   defaulttplctrl.use,
-	"del":   defaulttplctrl.del,
-	"cp":    defaulttplctrl.copy,
-	"copy":  defaulttplctrl.copy,
-	"clone": defaulttplctrl.clone,
+	"list": defaulttplctrl.list,
+	"add":  defaulttplctrl.add,
+	// "use":   defaulttplctrl.use,
+	"del": defaulttplctrl.del,
+	// "cp":    defaulttplctrl.copy,
+	// "copy":  defaulttplctrl.copy,
+	// "clone": defaulttplctrl.clone,
 }
 
 // 子命令定义 运行方法 go run main.go version 编译后 ./hugo version
@@ -183,21 +320,14 @@ tpl list
     list all template exist in tpl dir  
 tpl del [tplid]
     delete tpl
-tpl setup tplpath [dstdir]
+tpl add tplpath [dstdir]
     if tplpath is a net url,download it and make it as a templete
 	if tplpath is a local dir path like dir/of/tpl,copy it and make it as a templete
-tpl clone [giturl] [dstdir]
-    clone giturl  and save it at current dir for eg  tpl  clone https://github.com/techidea8/tpl-vue3-go.git
-tpl cp tplname newtplname
-tpl copy tplname newtplname
-    copy tpl named tplname and save as newtplname
 `,
 	Run: func(cmd *cobra.Command, args []string) { //这里是命令的执行方法
 		if len(args) == 0 {
-			cmd.Help()
-			return
-		}
-		if len(args) == 1 {
+			args = append(args, "list")
+		} else if len(args) == 1 {
 			args = append(args, "")
 		}
 		//args = append(args, "", "")
