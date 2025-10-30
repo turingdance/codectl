@@ -22,8 +22,8 @@ mysql-golang:
   DATE: types.Date
   TIME: types.DateTime
   YEAR: types.Date
-  DATETIME: types.Date
-  TIMESTAMP: types.Date
+  DATETIME: types.DateTime
+  TIMESTAMP: types.DateTime
   CHAR: string
   VARCHAR: string
   TINYTEXT: string
@@ -38,7 +38,7 @@ var DataTypeTOLangMapperRule map[string]map[string]string = make(map[string]map[
 
 func init() {
 	vp1 := viper.New()
-	vp1.SetConfigType("yml")
+	vp1.SetConfigType("yaml")
 	in := strings.NewReader(DefaultDbTypeToLangMapperRule)
 	err := vp1.ReadConfig(in)
 	if err != nil {
@@ -55,7 +55,7 @@ func init() {
 func ResetMapperRuleFromYaml(filepath string) (r map[string]map[string]string, e error) {
 	m := make(map[string]map[string]string, 0)
 	vp1 := viper.New()
-	vp1.SetConfigType("yml")
+	vp1.SetConfigType("yaml")
 	vp1.SetConfigFile(filepath)
 	e = vp1.ReadInConfig()
 	vp1.Unmarshal(&m)

@@ -2,7 +2,6 @@ package logic
 
 import (
 	"fmt"
-	"html"
 	"html/template"
 	"os"
 	"path/filepath"
@@ -15,7 +14,6 @@ import (
 	"github.com/turingdance/infra/filekit"
 	"github.com/turingdance/infra/logger"
 	"github.com/turingdance/infra/slicekit"
-	"github.com/turingdance/infra/stringx"
 	"github.com/turingdance/infra/timekit"
 	"gorm.io/gorm"
 )
@@ -160,26 +158,7 @@ const rootname = "./root.html"
 
 func Render(table *model.Table, tpldir string, onfilegennerate ...CallbackFunc) (err error) {
 	tmpls := template.New(rootname)
-	tmpls = tmpls.Funcs(template.FuncMap{
-		"ucfirst":   stringx.Ucfirst,
-		"lcfirst":   stringx.Lcfirst,
-		"jsstr":     stringx.JSStr,
-		"jstxt":     stringx.JSStr,
-		"js":        stringx.JS,
-		"lower":     stringx.Lower,
-		"upper":     stringx.Upper,
-		"upercamel": stringx.UnderlineToUperCamelCase,
-		"camel":     stringx.UnderlineToCamelCase,
-		"contains":  strings.Contains,
-		"has":       slicekit.HasSubStr,
-		"unescape": func(s string) template.HTML {
-			// 先解码 HTML 实体（&amp;→&）
-			decoded := html.UnescapeString(s)
-			// 返回 template.HTML 类型，告诉模板该内容已安全，无需再次转义
-			return template.HTML(decoded)
-		},
-		"replaceall": strings.ReplaceAll,
-	})
+	tmpls = tmpls.Funcs(funcMaps)
 	tmpls, err = tmpls.ParseGlob(tpldir + "/*.html")
 	if err != nil {
 		return err
