@@ -109,7 +109,7 @@ func reverse(prj *model.Project, _ ...string) (err error) {
 			return err
 		}
 		tpldir := prj.TplId // path.Join(conf.DirTpldata, prj.TplId)
-		err = logic.ExportTable(table, tpldir)
+		err = logic.ExportTable(table, tpldir, logic.INITPROJECT)
 		if err != nil {
 			return err
 		}

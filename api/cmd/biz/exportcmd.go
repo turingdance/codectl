@@ -39,7 +39,7 @@ var exportCmd = &cobra.Command{
 			conf.ResetMapperRule(rulefile)
 		}
 		//处理export
-		prj, err := logic.TakeCurrentProject()
+		prj, err := logic.TakeDefaultProject()
 
 		if err != nil {
 			fmt.Println(err.Error())
@@ -47,14 +47,6 @@ var exportCmd = &cobra.Command{
 		}
 		if prj.Dsn == "" {
 			fmt.Print("please check dsn")
-			return
-		}
-		if prj.DbName == "" {
-			fmt.Print("please check data base config use project list")
-			return
-		}
-		if prj.DbType == "" {
-			fmt.Print("please check data base config use project list")
 			return
 		}
 
@@ -83,7 +75,7 @@ var exportCmd = &cobra.Command{
 			logger.Error(err.Error())
 			return
 		}
-		err = logic.ExportTable(table, conf.DirTpldata)
+		err = logic.ExportTable(table, prj.TplId, logic.EXPORTATABLE)
 		if err != nil {
 			logger.Error(err.Error())
 			return

@@ -149,14 +149,21 @@ func PrepareExportTable(vo *PrepareVo) (table *model.Table, err error) {
 	return table, nil
 }
 
+type BizType string
+
+const (
+	INITPROJECT  BizType = "init"
+	EXPORTATABLE BizType = "export"
+)
+
 // tpldir 使用的模板路径
-func ExportTable(table *model.Table, tpldir string, onfilegennerate ...CallbackFunc) error {
-	return Render(table, tpldir, onfilegennerate...)
+func ExportTable(table *model.Table, tpldir string, biz BizType, onfilegennerate ...CallbackFunc) error {
+	return Render(table, tpldir, biz, onfilegennerate...)
 }
 
 const rootname = "./root.html"
 
-func Render(table *model.Table, tpldir string, onfilegennerate ...CallbackFunc) (err error) {
+func Render(table *model.Table, tpldir string, biz BizType, onfilegennerate ...CallbackFunc) (err error) {
 	tmpls := template.New(rootname)
 	tmpls = tmpls.Funcs(funcMaps)
 	tmpls, err = tmpls.ParseGlob(tpldir + "/*.html")
@@ -171,6 +178,12 @@ func Render(table *model.Table, tpldir string, onfilegennerate ...CallbackFunc) 
 	}
 	for _, tpl := range tmpls.Templates() {
 		tplName := tpl.Name()
+		//如果是inita table  业务,那么只处理包含 export_字段的模板
+		if biz == EXPORTATABLE {
+			if !strings.Contains(tplName, string(biz)+"_") {
+				continue
+			}
+		}
 		//过滤掉以html结尾的
 		if strings.HasSuffix(tplName, ".html") {
 			continue
