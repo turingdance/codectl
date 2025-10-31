@@ -166,7 +166,12 @@ const rootname = "./root.html"
 func Render(table *model.Table, tpldir string, biz BizType, onfilegennerate ...CallbackFunc) (err error) {
 	tmpls := template.New(rootname)
 	tmpls = tmpls.Funcs(funcMaps)
-	tmpls, err = tmpls.ParseGlob(tpldir + "/*.html")
+
+	if biz == EXPORTATABLE {
+		tmpls, err = tmpls.ParseGlob(tpldir + "/*export_*.html")
+	} else {
+		tmpls, err = tmpls.ParseGlob(tpldir + "/*.html")
+	}
 	if err != nil {
 		return err
 	}
@@ -179,11 +184,7 @@ func Render(table *model.Table, tpldir string, biz BizType, onfilegennerate ...C
 	for _, tpl := range tmpls.Templates() {
 		tplName := tpl.Name()
 		//如果是inita table  业务,那么只处理包含 export_字段的模板
-		if biz == EXPORTATABLE {
-			if !strings.Contains(tplName, string(biz)+"_") {
-				continue
-			}
-		}
+		// fmt.Println(tplName)
 		//过滤掉以html结尾的
 		if strings.HasSuffix(tplName, ".html") {
 			continue

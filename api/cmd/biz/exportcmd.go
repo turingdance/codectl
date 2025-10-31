@@ -59,7 +59,7 @@ var exportCmd = &cobra.Command{
 		exportdb, err := dbkit.OpenDb(prj.Dsn, dbkit.WithWriter(os.Stdout),
 			dbkit.SetLogLevel(loglevel))
 		if err != nil {
-			logger.Error(err.Error())
+			fmt.Print(err.Error())
 			return
 		}
 		vo := &logic.PrepareVo{
@@ -72,12 +72,12 @@ var exportCmd = &cobra.Command{
 		}
 		table, err := logic.PrepareExportTable(vo)
 		if err != nil {
-			logger.Error(err.Error())
+			fmt.Print(err.Error())
 			return
 		}
 		err = logic.ExportTable(table, prj.TplId, logic.EXPORTATABLE)
 		if err != nil {
-			logger.Error(err.Error())
+			fmt.Print(err.Error())
 			return
 		}
 	},
