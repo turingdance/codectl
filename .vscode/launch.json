@@ -145,7 +145,7 @@
             "mode": "auto",
             "console": "integratedTerminal",
             "program": "${workspaceFolder}/main.go",
-            "args": ["export","-t","form_section","-m","section"]
+            "args": ["export","-t","form_section02","-m","section02","-n","题目分组"]
         }
     ]
 }

@@ -166,12 +166,7 @@ const rootname = "./root.html"
 func Render(table *model.Table, tpldir string, biz BizType, onfilegennerate ...CallbackFunc) (err error) {
 	tmpls := template.New(rootname)
 	tmpls = tmpls.Funcs(funcMaps)
-
-	if biz == EXPORTATABLE {
-		tmpls, err = tmpls.ParseGlob(tpldir + "/*export_*.html")
-	} else {
-		tmpls, err = tmpls.ParseGlob(tpldir + "/*.html")
-	}
+	tmpls, err = tmpls.ParseGlob(filepath.Join(tpldir, string(biz), "*.html"))
 	if err != nil {
 		return err
 	}
@@ -272,6 +267,7 @@ func Render(table *model.Table, tpldir string, biz BizType, onfilegennerate ...C
 		for _, callback := range onfilegennerate {
 			callback(dstFile)
 		}
+		fmt.Println("gen=>", dstFile)
 	}
 	os.Remove(rootname)
 	return nil
